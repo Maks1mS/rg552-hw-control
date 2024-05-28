@@ -1,0 +1,9 @@
+[Unit]
+Description=Starting WiFi module on Anbernic RG552
+[Service]
+Type=simple
+OOMScoreAdjust=-100
+ExecStart=/usr/bin/rg552-wifi
+[Install]
+WantedBy=multi-user.target
+After=graphical.target

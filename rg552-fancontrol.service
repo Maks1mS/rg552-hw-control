@@ -1,0 +1,12 @@
+[Unit]
+Description=Anbernic Fan Control Service
+Before=phosh.service
+
+[Service]
+Type=simple
+OOMScoreAdjust=-100
+ExecStart=/usr/bin/rg552-fancontrol
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

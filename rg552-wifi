@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# SPDX-License-Identifier: GPL-2.0-or-later
+# Copyright (C) 2022-present JELOS (https://github.com/JustEnoughLinuxOS)
+
+# Set export GPIO for Wifi and set state
+if [ ! -d "/sys/class/gpio/gpio113" ]; then
+  echo 113 > /sys/class/gpio/export
+  echo out > /sys/class/gpio/gpio113/direction
+  echo 1 > /sys/class/gpio/gpio113/value
+fi
