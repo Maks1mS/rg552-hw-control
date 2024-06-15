@@ -1,0 +1,2 @@
+enable rg552-fancontrol.service
+enable rg552-wifi.service
