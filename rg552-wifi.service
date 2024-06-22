@@ -1,8 +1,8 @@
 [Unit]
 Description=Starting WiFi module on Anbernic RG552
-Before=graphical.target
+After=boot-complete.target
 [Service]
-Type=simple
+Type=oneshot
 OOMScoreAdjust=-100
 Restart=on-failure
 ExecStart=/usr/bin/rg552-wifi
