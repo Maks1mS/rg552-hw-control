@@ -32,19 +32,11 @@ mkdir -p %buildroot%_presetdir
 install -m 0644 20-rg552-hardware.preset %buildroot%_presetdir/
 
 
-# Enable service automatically if wifi and fan found - work in progress
-# cat>%buildroot%_udevrulesdir/90-rg552-hw.rules<<EOF
-# SUBSYSTEM=="usb", ACTION=="add", ENV{SYSTEMD_WANTS}="rg552-fancontrol.service", TAG+="systemd"
-# SUBSYSTEM=="usb", ACTION=="add", ATTRS{idVendor}=="0bda", ATTRS{idProduct}=="f179", ENV{SYSTEMD_WANTS}="rg552-wifi.service", TAG+="systemd"
-# EOF
-
 %post
-
 %post_service rg552-fancontrol.service
 %post_service rg552-wifi.service
 
 %preun
-
 %preun_service rg552-fancontrol
 %preun_service rg552-wifi
 
