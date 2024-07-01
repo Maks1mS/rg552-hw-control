@@ -1,6 +1,6 @@
 Name: rg552-hw-control
 Version: 0.1
-Release: alt4
+Release: alt5
 
 Summary: Set of tools for hardware control on Anbernic RG552
 
@@ -47,6 +47,11 @@ install -m 0644 20-rg552-hardware.preset %buildroot%_presetdir/
 %_presetdir/20-rg552-hardware.preset
 
 %changelog
+* Mon Jul 01 2024 Anton Midyukov <antohami@altlinux.org> 0.1-alt5
+- NMU: rg552-fancontrol, rg552-wifi: do nothing if the device model is not
+  Anbernic RG552
+- NMU: spec: cleanup commented out lines for udev rules
+
 * Sat Jun 22 2024 Artyom Bystrov <arbars@altlinux.org> 0.1-alt4
 - Minor spec clean
 
