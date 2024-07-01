@@ -1,5 +1,7 @@
 #!/bin/bash
 
+[ "$(cat /proc/device-tree/model)" = "Anbernic RG552" ] || exit 0
+
 if [ ! -d "/sys/class/pwm/pwmchip1/pwm0" ]; then
     echo 0 > /sys/class/pwm/pwmchip1/export
     echo 50000 > /sys/class/pwm/pwmchip1/pwm0/period

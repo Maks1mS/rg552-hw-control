@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 # Copyright (C) 2022-present JELOS (https://github.com/JustEnoughLinuxOS)
 
+[ "$(cat /proc/device-tree/model)" = "Anbernic RG552" ] || exit 0
+
 # Set export GPIO for Wifi and set state
 if [ ! -d "/sys/class/gpio/gpio113" ]; then
   echo 113 > /sys/class/gpio/export
