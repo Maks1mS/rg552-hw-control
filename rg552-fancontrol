@@ -1,11 +1,141 @@
 #!/bin/bash
 
-[ "$(cat /proc/device-tree/model)" = "Anbernic RG552" ] || exit 0
+DEFAULT_MODE="auto"
+HYSTERESIS_HIGH=41
+HYSTERESIS_LOW=38
+FAN_SPEED_OFF=0
+FAN_SPEED_LOW=25000
+FAN_SPEED_MEDIUM=35000
+FAN_SPEED_HIGH=45000
+FAN_SPEED_MAX=50000
+TEMP_THRESHOLD_LOW=45
+TEMP_THRESHOLD_MEDIUM=50
+TEMP_THRESHOLD_HIGH=55
+TEMP_HISTORY_SIZE=6
 
-if [ ! -d "/sys/class/pwm/pwmchip1/pwm0" ]; then
-    echo 0 > /sys/class/pwm/pwmchip1/export
-    echo 50000 > /sys/class/pwm/pwmchip1/pwm0/period
-    echo 30000 > /sys/class/pwm/pwmchip1/pwm0/duty_cycle
-    echo 1 > /sys/class/pwm/pwmchip1/pwm0/enable
-    exit 0
+DEVICE_MODEL="Anbernic RG552"
+PWM_CHIP="/sys/class/pwm/pwmchip1"
+PWM_CHANNEL="pwm0"
+CPU_TEMP_DIR="/sys/class/thermal/thermal_zone0"
+SLEEP_INTERVAL=2
+MODE_FILE="/run/rg552-fancontrol/mode"
+
+PWM_PERIOD=50000
+
+[ "$(cat /proc/device-tree/model)" = "$DEVICE_MODEL" ] || exit 0
+
+PWM_DIR="$PWM_CHIP/$PWM_CHANNEL"
+
+if [ ! -d "$PWM_DIR" ]; then
+    echo 0 > $PWM_CHIP/export
 fi
+
+init_fan() {
+    echo 1 >"$PWM_DIR/enable"
+}
+
+set_mode() {
+    case "$1" in
+    "low")
+        MODE="low"
+        set_fan_speed $FAN_SPEED_LOW
+        echo "Setting fan speed to low"
+        ;;
+    "medium")
+        MODE="medium"
+        set_fan_speed $FAN_SPEED_MEDIUM
+        echo "Setting fan speed to medium"
+        ;;
+    "high")
+        MODE="high"
+        set_fan_speed $FAN_SPEED_HIGH
+        echo "Setting fan speed to high"
+        ;;
+    "auto")
+        MODE="auto"
+        echo "Switching to automatic mode"
+        ;;
+    esac
+}
+
+declare -a temp_history
+
+calc_average_temp() {
+    local sum=0
+    for temp in "${temp_history[@]}"; do
+        sum=$((sum + temp))
+    done
+    echo $((sum / ${#temp_history[@]}))
+}
+
+set_fan_speed() {
+    local duty_cycle=$1
+    echo $PWM_PERIOD >"$PWM_DIR/period"
+    echo $duty_cycle >"$PWM_DIR/duty_cycle"
+    echo 1 >"$PWM_DIR/enable"
+}
+
+handle_input() {
+    input=$(cat "$MODE_FILE")
+
+    if [[ "$input" =~ ^(low|medium|high|auto)$ ]]; then
+        if [[ "$input" != "$MODE" ]]; then
+            set_mode "$input"
+        fi
+    else
+        echo "$MODE" > "$MODE_FILE"
+        echo "Invalid input. Use 'low', 'medium', 'high', or 'auto'."
+    fi
+}
+
+main() {
+    init_fan
+    set_mode $DEFAULT_MODE
+    mkdir -p "$(dirname $MODE_FILE)"
+    echo "$MODE" > $MODE_FILE
+
+    prev_state="off"
+
+    while true; do
+        handle_input
+        if [ "$MODE" = "auto" ]; then
+            CPU_TEMP=$(($(cat $CPU_TEMP_DIR/temp) / 1000))
+
+            temp_history+=($CPU_TEMP)
+
+            if [ ${#temp_history[@]} -gt $TEMP_HISTORY_SIZE ]; then
+                temp_history=("${temp_history[@]:1}")
+            fi
+
+            AVG_TEMP=$(calc_average_temp)
+
+            if [ "$prev_state" = "off" ] && [ $AVG_TEMP -ge $HYSTERESIS_HIGH ]; then
+                new_state="on"
+            elif [ "$prev_state" = "on" ] && [ $AVG_TEMP -le $HYSTERESIS_LOW ]; then
+                new_state="off"
+            else
+                new_state=$prev_state
+            fi
+
+            if [ "$new_state" = "off" ]; then
+                set_fan_speed $FAN_SPEED_OFF
+            else
+                if [ $AVG_TEMP -lt $TEMP_THRESHOLD_LOW ]; then
+                    set_fan_speed $FAN_SPEED_LOW
+                elif [ $AVG_TEMP -lt $TEMP_THRESHOLD_MEDIUM ]; then
+                    set_fan_speed $FAN_SPEED_MEDIUM
+                elif [ $AVG_TEMP -lt $TEMP_THRESHOLD_HIGH ]; then
+                    set_fan_speed $FAN_SPEED_HIGH
+                else
+                    set_fan_speed $FAN_SPEED_MAX
+                fi
+            fi
+
+            prev_state=$new_state
+        fi
+
+        sleep $SLEEP_INTERVAL
+    done
+}
+
+main

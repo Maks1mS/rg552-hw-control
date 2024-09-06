@@ -3,7 +3,7 @@ Description=Anbernic Fan Control Service
 Before=boot-complete.target
 
 [Service]
-Type=oneshot
+Type=simple
 OOMScoreAdjust=-100
 ExecStart=/usr/bin/rg552-fancontrol
 Restart=on-failure
