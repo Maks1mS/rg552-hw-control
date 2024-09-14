@@ -92,7 +92,8 @@ main() {
     init_fan
     set_mode $DEFAULT_MODE
     mkdir -p "$(dirname $MODE_FILE)"
-    echo "$MODE" > $MODE_FILE
+    echo "$MODE" > "$MODE_FILE"
+    chmod 0666 "$MODE_FILE"
 
     prev_state="off"
 
